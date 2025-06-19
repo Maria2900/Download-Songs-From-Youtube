@@ -1,0 +1,53 @@
+import os
+import subprocess
+import re
+
+# === CONFIGURAÇÕES ===
+playlist_url = 'https://youtu.be/bd7LxRIF3ts?si=ojhXRjFkw0ifdkRh'
+saida = r"C:\Users\Maria Clara\Downloads"
+modo = 'video'  # opções: 'video', 'audio-mp4', 'audio-mp3'
+# ======================
+
+os.makedirs(saida, exist_ok=True)
+
+# Define formato e pós-processamento conforme modo
+if modo == 'video':
+    # Força 720p exato, com fallback para melhor qualidade disponível
+    format_opt = 'bestvideo[height=720][ext=mp4][vcodec^=avc1]+bestaudio[ext=m4a]/bestvideo[ext=mp4][vcodec^=avc1][height<=720]+bestaudio[ext=m4a]/best[ext=mp4][height<=720]'
+    # Merge simples sem normalização (para evitar erros de compatibilidade)
+    post = '--merge-output-format mp4'
+    ext = 'mp4'
+elif modo == 'audio-mp4':
+    format_opt = 'bestaudio[ext=m4a]'
+    # Normalização mais simples para áudio
+    post = '--audio-quality 0'
+    ext = 'm4a'
+elif modo == 'audio-mp3':
+    format_opt = 'bestaudio'
+    # Extrai áudio em MP3 com qualidade máxima
+    post = '--extract-audio --audio-format mp3 --audio-quality 0'
+    ext = 'mp3'
+else:
+    raise ValueError("❌ Modo inválido. Use 'video', 'audio-mp4' ou 'audio-mp3'.")
+
+# Monta o comando yt-dlp
+command = f"""
+yt-dlp -o "{saida}/%(artist)s - %(title)s.{ext}" \
+--yes-playlist \
+--no-overwrites \
+--add-metadata \
+--embed-thumbnail \
+--parse-metadata "%(title)s:%(artist)s - %(title)s" \
+{post} \
+-f "{format_opt}" "{playlist_url}"
+"""
+
+# Limpa espaços extras
+command = re.sub(r'\s+', ' ', command).strip()
+
+# Executa
+print(f"🚀 Baixando em modo: {modo}")
+print(f"📹 Resolução: 720p (quando disponível)")
+print(f"🎵 Qualidade de áudio: Máxima")
+subprocess.run(command, shell=True)
+print(f"✅ Finalizado! Arquivos salvos em: {saida}")
